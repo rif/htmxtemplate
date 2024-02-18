@@ -1,0 +1,78 @@
+{{block "top" .}}
+<!doctype html>
+<html>
+  <title>W3.CSS</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <script
+    src="https://unpkg.com/htmx.org@1.9.10"
+    integrity="sha384-D1Kt99CQMDuVetoL1lrYwg5t+9QdHe7NLX/SoJYkXDFfX37iInKRy5xLSi8nO7UC"
+    crossorigin="anonymous"
+  ></script>
+  <link rel="stylesheet" href="https://www.w3schools.com/w3css/4/w3.css" />
+  <body>
+    <div
+      class="w3-sidebar w3-bar-block w3-collapse w3-card w3-animate-left"
+      style="width: 200px"
+      id="mySidebar"
+    >
+      <button
+        class="w3-bar-item w3-button w3-large w3-hide-large"
+        onclick="w3_close()"
+      >
+        Close &times;
+      </button>
+      <a
+        hx-get="/link1"
+        hx-push-url="true"
+        hx-target="#main"
+        class="w3-bar-item w3-button"
+        >Link 1</a
+      >
+      <a
+        hx-get="/link2"
+        hx-push-url="true"
+        hx-target="#main"
+        class="w3-bar-item w3-button"
+        >Link 2</a
+      >
+      <a
+        hx-get="/link3"
+        hx-push-url="true"
+        hx-target="#main"
+        class="w3-bar-item w3-button"
+        >Link 3</a
+      >
+    </div>
+
+    <div id="main">
+      <div class="w3-main" style="margin-left: 200px">
+        <div class="w3-teal">
+          <button
+            class="w3-button w3-teal w3-xlarge w3-hide-large"
+            onclick="w3_open()"
+          >
+            &#9776;
+          </button>
+          <div class="w3-container">
+            <h1>{{.Name}}</h1>
+          </div>
+        </div>
+      </div>
+    </div>
+    {{ end}}
+    <div id="main">
+      <div class="w3-container">{{ block "container" .}} {{ end }}</div>
+    </div>
+    {{ block "bottom" . }}
+    <script>
+      function w3_open() {
+        document.getElementById("mySidebar").style.display = "block";
+      }
+
+      function w3_close() {
+        document.getElementById("mySidebar").style.display = "none";
+      }
+    </script>
+  </body>
+</html>
+{{ end }}

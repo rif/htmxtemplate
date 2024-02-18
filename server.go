@@ -1,19 +1,13 @@
 package main
 
 import (
-	"context"
-	"fmt"
 	"html/template"
 	"io"
 
 	"net/http"
-	"os"
 
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
-
-	"github.com/georgysavva/scany/v2/pgxscan"
-	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 type User struct {
@@ -31,9 +25,9 @@ func (t *Templates) Render(w io.Writer, name string, data interface{}, c echo.Co
 }
 
 func main() {
-	ctx := context.Background()
+	/*ctx := context.Background()
 	db, err := pgxpool.New(ctx,
-		"postgresql://sellerportal:6r74qFrOkHfYtFdR@172.17.0.1:5432/sellerportal")
+	"postgresql://sellerportal:6r74qFrOkHfYtFdR@172.17.0.1:5432/sellerportal")
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Unable to connect to database: %v\n", err)
 		os.Exit(1)
@@ -47,7 +41,7 @@ func main() {
 
 	for _, u := range users {
 		fmt.Println(u)
-	}
+	}*/
 
 	e := echo.New()
 
@@ -56,13 +50,17 @@ func main() {
 	e.Renderer = &Templates{template.Must(template.ParseGlob("views/*.html"))}
 
 	e.GET("/link1", func(c echo.Context) error {
-		return c.Render(http.StatusOK, "main", map[string]interface{}{"Name": "Link1"})
+		return c.Render(http.StatusOK, "index", map[string]interface{}{"Name": "Link1"})
 	})
 	e.GET("/link2", func(c echo.Context) error {
-		return c.Render(http.StatusOK, "main", map[string]interface{}{"Name": "Link2"})
+		block := "link2Page"
+		if c.Request().Header.Get("Hx-Request") == "true" {
+			block = "link2Container"
+		}
+		return c.Render(http.StatusOK, block, map[string]interface{}{"Name": "Link2"})
 	})
 	e.GET("/link3", func(c echo.Context) error {
-		return c.Render(http.StatusOK, "main", map[string]interface{}{"Name": "Link3"})
+		return c.Render(http.StatusOK, "index", map[string]interface{}{"Name": "Link3"})
 	})
 	e.GET("/", func(c echo.Context) error {
 		return c.Render(http.StatusOK, "index", map[string]interface{}{"Name": "Home"})
