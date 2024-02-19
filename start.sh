@@ -1,1 +1,1 @@
-wgo -file=.go -file=.html go run .
+wgo -file=.html go run .

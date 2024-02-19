@@ -1,0 +1,25 @@
+version: '3'
+
+tasks:
+  default:
+    dir: admin
+    cmds:
+      - NODE_OPTIONS=--openssl-legacy-provider npm run build
+
+  up:
+    dir: admin
+    cmds:
+      - npm update
+
+  build:
+    cmds:
+      - CGO_ENABLED=0 go build -tags netgo -ldflags '-w -X main.version={{.GIT_TAG}}' -o fashion
+    vars:
+      GIT_TAG:
+        sh: git describe --tags
+    
+  deploy:
+    deps: [build]
+    cmds:
+      - rsync -avzz fashion web fashion:fashion/
+      - ssh auspicious systemctl restart fashion.service

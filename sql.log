@@ -1,0 +1,247 @@
+timestamp: 2024-01-17T21:33:34.052788
+CREATE TABLE "auth_user"(
+    "id" INTEGER PRIMARY KEY AUTOINCREMENT,
+    "first_name" CHAR(128),
+    "last_name" CHAR(128),
+    "email" CHAR(512),
+    "password" CHAR(512),
+    "registration_key" CHAR(512),
+    "reset_password_key" CHAR(512),
+    "registration_id" CHAR(512)
+);
+success!
+timestamp: 2024-01-17T21:33:34.129282
+CREATE TABLE "auth_group"(
+    "id" INTEGER PRIMARY KEY AUTOINCREMENT,
+    "role" CHAR(512),
+    "description" TEXT
+);
+success!
+timestamp: 2024-01-17T21:33:34.231421
+CREATE TABLE "auth_membership"(
+    "id" INTEGER PRIMARY KEY AUTOINCREMENT,
+    "user_id" INTEGER REFERENCES "auth_user" ("id") ON DELETE CASCADE ON UPDATE CASCADE  ,
+    "group_id" INTEGER REFERENCES "auth_group" ("id") ON DELETE CASCADE ON UPDATE CASCADE  
+);
+success!
+timestamp: 2024-01-17T21:33:34.330477
+CREATE TABLE "auth_permission"(
+    "id" INTEGER PRIMARY KEY AUTOINCREMENT,
+    "group_id" INTEGER REFERENCES "auth_group" ("id") ON DELETE CASCADE ON UPDATE CASCADE  ,
+    "name" CHAR(512),
+    "table_name" CHAR(512),
+    "record_id" INTEGER
+);
+success!
+timestamp: 2024-01-17T21:33:34.422134
+CREATE TABLE "auth_event"(
+    "id" INTEGER PRIMARY KEY AUTOINCREMENT,
+    "time_stamp" TIMESTAMP,
+    "client_ip" CHAR(512),
+    "user_id" INTEGER REFERENCES "auth_user" ("id") ON DELETE CASCADE ON UPDATE CASCADE  ,
+    "origin" CHAR(512),
+    "description" TEXT
+);
+success!
+timestamp: 2024-01-17T21:33:34.515689
+CREATE TABLE "auth_cas"(
+    "id" INTEGER PRIMARY KEY AUTOINCREMENT,
+    "user_id" INTEGER REFERENCES "auth_user" ("id") ON DELETE CASCADE ON UPDATE CASCADE  ,
+    "created_on" TIMESTAMP,
+    "service" CHAR(512),
+    "ticket" CHAR(512),
+    "renew" CHAR(1)
+);
+success!
+timestamp: 2024-01-17T21:33:47.968210
+CREATE TABLE "reprezentant"(
+    "id" INTEGER PRIMARY KEY AUTOINCREMENT,
+    "nume" CHAR(512),
+    "seria" CHAR(512),
+    "nr" INTEGER,
+    "is_active" CHAR(1),
+    "created_on" TIMESTAMP,
+    "created_by" INTEGER REFERENCES "auth_user" ("id") ON DELETE CASCADE ON UPDATE CASCADE  ,
+    "modified_on" TIMESTAMP,
+    "modified_by" INTEGER REFERENCES "auth_user" ("id") ON DELETE CASCADE ON UPDATE CASCADE  ,
+    "request_tenant" CHAR(512)
+);
+success!
+timestamp: 2024-01-17T21:33:48.056726
+CREATE TABLE "firma"(
+    "id" INTEGER PRIMARY KEY AUTOINCREMENT,
+    "nume" CHAR(512) NOT NULL,
+    "logo" CHAR(512),
+    "adresa" TEXT,
+    "cui" CHAR(512),
+    "numar" CHAR(512),
+    "reprezentant" INTEGER REFERENCES "reprezentant" ("id") ON DELETE CASCADE ON UPDATE CASCADE  ,
+    "is_active" CHAR(1),
+    "created_on" TIMESTAMP,
+    "created_by" INTEGER REFERENCES "auth_user" ("id") ON DELETE CASCADE ON UPDATE CASCADE  ,
+    "modified_on" TIMESTAMP,
+    "modified_by" INTEGER REFERENCES "auth_user" ("id") ON DELETE CASCADE ON UPDATE CASCADE  ,
+    "request_tenant" CHAR(512)
+);
+success!
+timestamp: 2024-01-17T21:33:48.147894
+CREATE TABLE "cont"(
+    "id" INTEGER PRIMARY KEY AUTOINCREMENT,
+    "firma" INTEGER REFERENCES "firma" ("id") ON DELETE CASCADE ON UPDATE CASCADE  ,
+    "moneda" CHAR(512),
+    "iban" CHAR(512),
+    "banca" CHAR(512),
+    "swift" CHAR(512),
+    "is_active" CHAR(1),
+    "created_on" TIMESTAMP,
+    "created_by" INTEGER REFERENCES "auth_user" ("id") ON DELETE CASCADE ON UPDATE CASCADE  ,
+    "modified_on" TIMESTAMP,
+    "modified_by" INTEGER REFERENCES "auth_user" ("id") ON DELETE CASCADE ON UPDATE CASCADE  ,
+    "request_tenant" CHAR(512)
+);
+success!
+timestamp: 2024-01-17T21:33:48.242717
+CREATE TABLE "client"(
+    "id" INTEGER PRIMARY KEY AUTOINCREMENT,
+    "nume" CHAR(512) NOT NULL,
+    "logo" CHAR(512),
+    "adresa" TEXT,
+    "cui" CHAR(512),
+    "numar" CHAR(512),
+    "reprezentant" INTEGER REFERENCES "reprezentant" ("id") ON DELETE CASCADE ON UPDATE CASCADE  ,
+    "is_active" CHAR(1),
+    "created_on" TIMESTAMP,
+    "created_by" INTEGER REFERENCES "auth_user" ("id") ON DELETE CASCADE ON UPDATE CASCADE  ,
+    "modified_on" TIMESTAMP,
+    "modified_by" INTEGER REFERENCES "auth_user" ("id") ON DELETE CASCADE ON UPDATE CASCADE  ,
+    "request_tenant" CHAR(512),
+    "iban" CHAR(512),
+    "banca" CHAR(512)
+);
+success!
+timestamp: 2024-01-17T21:33:48.347187
+CREATE TABLE "contract"(
+    "id" INTEGER PRIMARY KEY AUTOINCREMENT,
+    "client" INTEGER REFERENCES "client" ("id") ON DELETE CASCADE ON UPDATE CASCADE  ,
+    "titlu" CHAR(512),
+    "descriere" TEXT,
+    "fisier" CHAR(512),
+    "request_tenant" CHAR(512)
+);
+success!
+timestamp: 2024-01-17T21:33:48.440228
+CREATE TABLE "factura"(
+    "id" INTEGER PRIMARY KEY AUTOINCREMENT,
+    "numar" CHAR(512) NOT NULL,
+    "firma" INTEGER REFERENCES "firma" ("id") ON DELETE CASCADE ON UPDATE CASCADE  ,
+    "cont" INTEGER REFERENCES "cont" ("id") ON DELETE CASCADE ON UPDATE CASCADE  ,
+    "client" INTEGER REFERENCES "client" ("id") ON DELETE CASCADE ON UPDATE CASCADE  ,
+    "platita" CHAR(1),
+    "termen_de_plata" DATE,
+    "moneda" CHAR(512),
+    "curs_schimb" DOUBLE,
+    "tva" INTEGER,
+    "reprezentant" INTEGER REFERENCES "reprezentant" ("id") ON DELETE CASCADE ON UPDATE CASCADE  ,
+    "uuid" CHAR(64),
+    "tva_activ" CHAR(1),
+    "is_active" CHAR(1),
+    "created_on" TIMESTAMP,
+    "created_by" INTEGER REFERENCES "auth_user" ("id") ON DELETE CASCADE ON UPDATE CASCADE  ,
+    "modified_on" TIMESTAMP,
+    "modified_by" INTEGER REFERENCES "auth_user" ("id") ON DELETE CASCADE ON UPDATE CASCADE  ,
+    "request_tenant" CHAR(512)
+);
+success!
+timestamp: 2024-01-17T21:33:48.531732
+CREATE TABLE "produs"(
+    "id" INTEGER PRIMARY KEY AUTOINCREMENT,
+    "factura" INTEGER REFERENCES "factura" ("id") ON DELETE CASCADE ON UPDATE CASCADE  ,
+    "denumire" CHAR(512) NOT NULL,
+    "um" CHAR(512),
+    "cantitate" DOUBLE NOT NULL,
+    "pret_unitar" DOUBLE NOT NULL,
+    "valoare" DOUBLE,
+    "request_tenant" CHAR(512)
+);
+success!
+timestamp: 2024-01-17T21:33:48.624308
+CREATE TABLE "anexa"(
+    "id" INTEGER PRIMARY KEY AUTOINCREMENT,
+    "factura" INTEGER REFERENCES "factura" ("id") ON DELETE CASCADE ON UPDATE CASCADE  ,
+    "continut" TEXT,
+    "is_active" CHAR(1),
+    "created_on" TIMESTAMP,
+    "created_by" INTEGER REFERENCES "auth_user" ("id") ON DELETE CASCADE ON UPDATE CASCADE  ,
+    "modified_on" TIMESTAMP,
+    "modified_by" INTEGER REFERENCES "auth_user" ("id") ON DELETE CASCADE ON UPDATE CASCADE  ,
+    "request_tenant" CHAR(512)
+);
+success!
+timestamp: 2024-01-17T21:33:48.716612
+CREATE TABLE "angajat"(
+    "id" INTEGER PRIMARY KEY AUTOINCREMENT,
+    "firma" INTEGER REFERENCES "firma" ("id") ON DELETE CASCADE ON UPDATE CASCADE  ,
+    "nume" CHAR(30),
+    "prenume" CHAR(30),
+    "norma" INTEGER,
+    "is_active" CHAR(1),
+    "created_on" TIMESTAMP,
+    "created_by" INTEGER REFERENCES "auth_user" ("id") ON DELETE CASCADE ON UPDATE CASCADE  ,
+    "modified_on" TIMESTAMP,
+    "modified_by" INTEGER REFERENCES "auth_user" ("id") ON DELETE CASCADE ON UPDATE CASCADE  ,
+    "request_tenant" CHAR(512)
+);
+success!
+timestamp: 2024-01-17T21:33:48.811985
+CREATE TABLE "pontaj"(
+    "id" INTEGER PRIMARY KEY AUTOINCREMENT,
+    "angajat" INTEGER REFERENCES "angajat" ("id") ON DELETE CASCADE ON UPDATE CASCADE  ,
+    "luna" DATE,
+    "zile" TEXT,
+    "concedii" TEXT,
+    "nr_zile_lucratoare" INTEGER,
+    "total_ore_lucrate" INTEGER,
+    "request_tenant" CHAR(512)
+);
+success!
+timestamp: 2024-01-17T21:33:48.906971
+CREATE TABLE "tip_concediu"(
+    "id" INTEGER PRIMARY KEY AUTOINCREMENT,
+    "abreviere" CHAR(3) UNIQUE,
+    "nume" CHAR(50) UNIQUE,
+    "request_tenant" CHAR(512)
+);
+success!
+timestamp: 2024-01-17T21:33:49.004770
+CREATE TABLE "proiect"(
+    "id" INTEGER PRIMARY KEY AUTOINCREMENT,
+    "client" INTEGER REFERENCES "client" ("id") ON DELETE CASCADE ON UPDATE CASCADE  ,
+    "nume" CHAR(512),
+    "desc" CHAR(512),
+    "rotunjire" INTEGER,
+    "is_active" CHAR(1),
+    "created_on" TIMESTAMP,
+    "created_by" INTEGER REFERENCES "auth_user" ("id") ON DELETE CASCADE ON UPDATE CASCADE  ,
+    "modified_on" TIMESTAMP,
+    "modified_by" INTEGER REFERENCES "auth_user" ("id") ON DELETE CASCADE ON UPDATE CASCADE  ,
+    "request_tenant" CHAR(512)
+);
+success!
+timestamp: 2024-01-17T21:33:49.098726
+CREATE TABLE "activitate"(
+    "id" INTEGER PRIMARY KEY AUTOINCREMENT,
+    "proiect" INTEGER REFERENCES "proiect" ("id") ON DELETE CASCADE ON UPDATE CASCADE  ,
+    "start" TIMESTAMP,
+    "sfarsit" TIMESTAMP,
+    "descriere" TEXT,
+    "taguri" TEXT,
+    "is_active" CHAR(1),
+    "created_on" TIMESTAMP,
+    "created_by" INTEGER REFERENCES "auth_user" ("id") ON DELETE CASCADE ON UPDATE CASCADE  ,
+    "modified_on" TIMESTAMP,
+    "modified_by" INTEGER REFERENCES "auth_user" ("id") ON DELETE CASCADE ON UPDATE CASCADE  ,
+    "request_tenant" CHAR(512)
+);
+success!
+timestamp: 2024-01-17T21:34:27.916833
+ALTER TABLE "produs" ADD "contract" INTEGER REFERENCES "contract" ("id") ON DELETE CASCADE ON UPDATE CASCADE  ;
