@@ -50,7 +50,11 @@ func main() {
 	e.Renderer = &Templates{template.Must(template.ParseGlob("views/*.html"))}
 
 	e.GET("/link1", func(c echo.Context) error {
-		return c.Render(http.StatusOK, "index", map[string]interface{}{"Name": "Link1"})
+		block := "link1Page"
+		if c.Request().Header.Get("Hx-Request") == "true" {
+			block = "link1Container"
+		}
+		return c.Render(http.StatusOK, block, map[string]interface{}{"Name": "Link1"})
 	})
 	e.GET("/link2", func(c echo.Context) error {
 		block := "link2Page"
@@ -60,7 +64,11 @@ func main() {
 		return c.Render(http.StatusOK, block, map[string]interface{}{"Name": "Link2"})
 	})
 	e.GET("/link3", func(c echo.Context) error {
-		return c.Render(http.StatusOK, "index", map[string]interface{}{"Name": "Link3"})
+		block := "link3Page"
+		if c.Request().Header.Get("Hx-Request") == "true" {
+			block = "link3Container"
+		}
+		return c.Render(http.StatusOK, block, map[string]interface{}{"Name": "Link3"})
 	})
 	e.GET("/", func(c echo.Context) error {
 		return c.Render(http.StatusOK, "index", map[string]interface{}{"Name": "Home"})

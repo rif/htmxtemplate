@@ -43,7 +43,7 @@
         >Link 3</a
       >
     </div>
-
+    {{ end}}
     <div id="main">
       <div class="w3-main" style="margin-left: 200px">
         <div class="w3-teal">
@@ -59,10 +59,7 @@
         </div>
       </div>
     </div>
-    {{ end}}
-    <div id="main">
-      <div class="w3-container">{{ block "container" .}} {{ end }}</div>
-    </div>
+    <div class="w3-container"></div>
     {{ block "bottom" . }}
     <script>
       function w3_open() {
