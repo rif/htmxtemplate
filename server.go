@@ -1,20 +1,21 @@
 package main
 
 import (
+	"context"
+	"fmt"
 	"html/template"
 	"io"
+	"os"
 
 	"net/http"
 
+	"github.com/georgysavva/scany/pgxscan"
+	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 )
 
-type User struct {
-	ID        string
-	FirstName string
-	Email     string
-}
+
 
 type Templates struct {
 	*template.Template
@@ -25,9 +26,9 @@ func (t *Templates) Render(w io.Writer, name string, data interface{}, c echo.Co
 }
 
 func main() {
-	/*ctx := context.Background()
+	ctx := context.Background()
 	db, err := pgxpool.New(ctx,
-	"postgresql://sellerportal:6r74qFrOkHfYtFdR@172.17.0.1:5432/sellerportal")
+		"postgresql://postgres:testus@172.17.0.1:5432/templates")
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Unable to connect to database: %v\n", err)
 		os.Exit(1)
@@ -35,13 +36,13 @@ func main() {
 	defer db.Close()
 
 	var users []*User
-	if err := pgxscan.Select(ctx, db, &users, `SELECT id, first_name, email FROM sp.user`); err != nil {
+	if err := pgxscan.Select(ctx, db, &users, `SELECT id, first_name, email FROM "user"`); err != nil {
 		fmt.Fprintf(os.Stderr, "Failed to fetch: %v\n", err)
 	}
 
 	for _, u := range users {
 		fmt.Println(u)
-	}*/
+	}
 
 	e := echo.New()
 

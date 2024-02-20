@@ -30,32 +30,22 @@ type AuthManager struct {
 	sync.RWMutex
 }
 
+
 type User struct {
-	ID                int     `storm:"id,increment" json:"id"` // primary key
-	Group             string  `storm:"index" json:"group"`
-	Email             string  `storm:"unique" json:"email"`
-	Phone             string  `storm:"index" json:"phone"`
-	FirstName         string  `storm:"index" json:"firstName"`
-	LastName          string  `storm:"index" json:"lastName"`
-	InfluencerCode    string  `storm:"index" json:"influencerCode"`
-	InfluencerPercent float64 `json:"influencerPercent"`
-	Street            string  `json:"street"`
-	City              string  `json:"city"`
-	State             string  `json:"state"`
-	ZipCode           string  `json:"zipCode"`
-	Password          string  `json:"password"`
+	ID               string
+	Group             string
+	FirstName        string
+	LastName         string
+	Email            string
+	HashedPassword   string
+	RegistrationKey  string
+	ResetPasswordKey string
 }
 
 type Session struct {
-	Key   string `storm:"id"` // nothing to do with Key below
+	Key   string
 	Email string
 	Group string
-	Code  string
-}
-
-type Key struct {
-	Email string `storm:"id,increment" json:"email"`
-	Value string `storm:"index" json:"value"`
 }
 
 func NewAuthManager(db *storm.DB) (*AuthManager, error) {
@@ -136,7 +126,6 @@ func (am *AuthManager) AuthMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
 		}
 		c.Set("email", s.Email)
 		c.Set("group", s.Group)
-		c.Set("code", s.Code)
 		return next(c)
 	}
 }
@@ -146,17 +135,6 @@ func (am *AuthManager) AdminMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
 		group, ok := c.Get("group").(string)
 		if !ok || group != GroupAdmin {
 			log.Warn().Interface("email", c.Get("email")).Interface("group", c.Get("group")).Msg("admin access")
-			return c.NoContent(http.StatusForbidden)
-		}
-		return next(c)
-	}
-}
-
-func (am *AuthManager) InfluencerMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
-	return func(c echo.Context) error {
-		group, ok := c.Get("group").(string)
-		if !ok || (group != GroupInfluencer && group != GroupAdmin) {
-			log.Warn().Interface("email", c.Get("email")).Interface("group", c.Get("group")).Msg("influencer access")
 			return c.NoContent(http.StatusForbidden)
 		}
 		return next(c)
@@ -205,7 +183,6 @@ func (am *AuthManager) LoginPostHandler(c echo.Context) error {
 		Key:   cookie,
 		Email: credentials.Email,
 		Group: u.Group,
-		Code:  u.InfluencerCode,
 	})
 	return c.String(http.StatusOK, "OK")
 }
@@ -263,20 +240,6 @@ func (am *AuthManager) UserPostHandler(c echo.Context) error {
 			}
 		}
 	}
-	// check influencer code
-	if u.Group == GroupInfluencer {
-		var users []*User
-		if err := am.db.All(&users); err != nil {
-			return err
-		}
-		for _, iterUser := range users {
-			if iterUser.InfluencerCode == u.InfluencerCode &&
-				iterUser.ID != u.ID {
-				// duplicate code
-				return c.NoContent(http.StatusFound)
-			}
-		}
-	}
 	if err := am.db.Save(u); err != nil {
 		return err
 	}
@@ -299,76 +262,7 @@ func (am *AuthManager) UserDeleteHandler(c echo.Context) error {
 	return c.NoContent(http.StatusOK)
 }
 
-func (am *AuthManager) KeysHandler(c echo.Context) error {
-	am.RLock()
-	defer am.RUnlock()
-	var keys []*Key
-	if err := am.db.All(&keys); err != nil {
-		return nil
-	}
-	var users []*User
-	if err := am.db.All(&users); err != nil {
-		return nil
-	}
-	var emails []string
-	for _, u := range users {
-		emails = append(emails, u.Email)
-	}
-	response := map[string]interface{}{
-		"emails": emails,
-		"keys":   keys,
-	}
-	return c.JSON(http.StatusOK, response)
-}
-
-func (am *AuthManager) KeyPostHandler(c echo.Context) error {
-	am.Lock()
-	defer am.Unlock()
-	k := new(Key)
-	if err := c.Bind(k); err != nil {
-		return err
-	}
-	key := &Key{
-		Email: k.Email,
-		Value: nuid.Next(),
-	}
-	am.cache.Set(key.Value, key.Email)
-	if err := am.db.Save(key); err != nil {
-		return err
-	}
-	return c.String(http.StatusOK, key.Value)
-}
-
-func (am *AuthManager) KeyDeleteHandler(c echo.Context) error {
-	am.Lock()
-	defer am.Unlock()
-	k := new(Key)
-	if err := c.Bind(k); err != nil {
-		return err
-	}
-	am.cache.Delete(k.Value)
-	if err := am.db.DeleteStruct(k); err != nil {
-		return err
-	}
-	return c.NoContent(http.StatusOK)
-}
-
 type Role struct {
 	Name        string              `json:"name"`
 	Permissions map[string][]string `json:"permissions"`
-}
-
-func (am *AuthManager) InfluencersHandler(c echo.Context) error {
-	var users []*User
-	if err := am.db.Find("Group", GroupInfluencer, &users); err != nil {
-		return err
-	}
-
-	for _, user := range users {
-		user.Password = ""
-	}
-	response := map[string]interface{}{
-		"items": users,
-	}
-	return c.JSON(http.StatusOK, response)
 }

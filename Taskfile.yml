@@ -6,6 +6,17 @@ tasks:
     cmds:
       - NODE_OPTIONS=--openssl-legacy-provider npm run build
 
+  initdb:
+    cmds:
+    - docker run --rm -v ${PWD}:/data --name tpl -p 5432:5432 -e POSTGRES_PASSWORD=testus -d postgres:15-alpine
+    - until docker exec tpl pg_isready ; do sleep 1 ; done
+    - sleep 1
+    - docker exec tpl createdb -U postgres templates
+
+  db:
+    cmds:
+    - usql postgresql://postgres:testus@172.17.0.1/templates
+
   up:
     dir: admin
     cmds:
