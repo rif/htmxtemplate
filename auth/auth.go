@@ -20,8 +20,6 @@ const (
 	CookieSession   = "session"
 	CookieSecret    = "aisiep0oongeiDaeCh7Yie3saPi0ciu4feiJoqu6woh6Xoopo4Ahx4ca6ga4shei"
 	GroupAdmin      = "admin"
-	GroupInfluencer = "influencer"
-	GroupSeamstress = "seamstress"
 )
 
 type AuthManager struct {
@@ -128,22 +126,11 @@ func (am *AuthManager) AuthMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
 	}
 }
 
-func (am *AuthManager) InfluencerMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
-	return func(c echo.Context) error {
-		group, ok := c.Get("group").(string)
-		if !ok || (group != GroupInfluencer && group != GroupAdmin) {
-			log.Warn().Interface("email", c.Get("email")).Interface("group", c.Get("group")).Msg("influencer access")
-			return c.NoContent(http.StatusForbidden)
-		}
-		return next(c)
-	}
-}
-
 func (am *AuthManager) LoginHandler(c echo.Context) error {
 	cookie, err := c.Cookie(CookieSession)
-	if err == nil && cookie != nil {
-		s := Session{}
-		if err := am.db.One("Key", cookie.Value, &s); err == nil {
+if err == nil && cookie != nil {
+s := Session{}
+if err := am.db.One("Key", cookie.Value, &s); err == nil {
 			return c.Redirect(http.StatusFound, "/")
 		}
 	}
@@ -181,27 +168,26 @@ func (am *AuthManager) LoginPostHandler(c echo.Context) error {
 		Key:   cookie,
 		Email: credentials.Email,
 		Group: u.Group,
-		Code:  u.InfluencerCode,
 	})
 	return c.String(http.StatusOK, "OK")
 }
 
 func (am *AuthManager) LogoutHandler(c echo.Context) error {
-	cookie, err := c.Cookie(CookieSession)
-	if err != nil || cookie == nil {
-		return c.Redirect(http.StatusFound, "/login")
-	}
-	if err := am.db.DeleteStruct(&Session{Key: cookie.Value}); err != nil {
-		return err
-	}
-	c.SetCookie(&http.Cookie{
-		Path:    "/",
-		Name:    CookieSession,
-		Value:   "logout",
-		Expires: time.Unix(0, 0),
-	})
+cookie, err := c.Cookie(CookieSession)
+if err != nil || cookie == nil {
+return c.Redirect(http.StatusFound, "/login")
+}
+if err := am.db.DeleteStruct(&Session{Key: cookie.Value}); err != nil {
+return err
+}
+c.SetCookie(&http.Cookie{
+Path:    "/",
+Name:    CookieSession,
+Value:   "logout",
+Expires: time.Unix(0, 0),
+})
 
-	return c.Redirect(http.StatusFound, "/login")
+return c.Redirect(http.StatusFound, "/login")
 }
 
 func (am *AuthManager) UsersHandler(c echo.Context) error {
@@ -239,20 +225,6 @@ func (am *AuthManager) UserPostHandler(c echo.Context) error {
 			}
 		}
 	}
-	// check influencer code
-	if u.Group == GroupInfluencer {
-		var users []*User
-		if err := am.db.All(&users); err != nil {
-			return err
-		}
-		for _, iterUser := range users {
-			if iterUser.InfluencerCode == u.InfluencerCode &&
-				iterUser.ID != u.ID {
-				// duplicate code
-				return c.NoContent(http.StatusFound)
-			}
-		}
-	}
 	if err := am.db.Save(u); err != nil {
 		return err
 	}
@@ -260,19 +232,19 @@ func (am *AuthManager) UserPostHandler(c echo.Context) error {
 }
 
 func (am *AuthManager) UserDeleteHandler(c echo.Context) error {
-	u := new(User)
-	if err := c.Bind(u); err != nil {
-		return err
-	}
-	if err := am.db.DeleteStruct(u); err != nil {
-		return err
-	}
-	// delete associated keys
-	if err := am.db.Select(q.Eq("Email", u.Email)).Delete(new(Key)); err != nil {
-		return err
-	}
+u := new(User)
+if err := c.Bind(u); err != nil {
+return err
+}
+if err := am.db.DeleteStruct(u); err != nil {
+return err
+}
+// delete associated keys
+if err := am.db.Select(q.Eq("Email", u.Email)).Delete(new(Key)); err != nil {
+return err
+}
 
-	return c.NoContent(http.StatusOK)
+return c.NoContent(http.StatusOK)
 }
 
 func (am *AuthManager) KeysHandler(c echo.Context) error {
@@ -332,20 +304,5 @@ func (am *AuthManager) KeyDeleteHandler(c echo.Context) error {
 type Role struct {
 	Name        string              `json:"name"`
 	Permissions map[string][]string `json:"permissions"`
-}
-
-func (am *AuthManager) InfluencersHandler(c echo.Context) error {
-	var users []*User
-	if err := am.db.Find("Group", GroupInfluencer, &users); err != nil {
-		return err
-	}
-
-	for _, user := range users {
-		user.Password = ""
-	}
-	response := map[string]interface{}{
-		"items": users,
-	}
-	return c.JSON(http.StatusOK, response)
 }
 */
