@@ -5,17 +5,18 @@ import (
 	"fmt"
 	"html/template"
 	"io"
+	"log/slog"
 	"os"
 
 	"net/http"
+	"templates/auth"
 
-	"github.com/georgysavva/scany/pgxscan"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 )
 
-
+const version = "v0.0.1"
 
 type Templates struct {
 	*template.Template
@@ -35,20 +36,33 @@ func main() {
 	}
 	defer db.Close()
 
-	var users []*User
-	if err := pgxscan.Select(ctx, db, &users, `SELECT id, first_name, email FROM "user"`); err != nil {
-		fmt.Fprintf(os.Stderr, "Failed to fetch: %v\n", err)
-	}
-
-	for _, u := range users {
-		fmt.Println(u)
+	ath, err := auth.NewAuthManager(db)
+	if err != nil {
+		slog.Error("cannot init auth")
 	}
 
 	e := echo.New()
-
 	e.Use(middleware.Logger())
 	e.Use(middleware.Recover())
+	e.Use(middleware.CSRFWithConfig(middleware.CSRFConfig{
+		Skipper: func(c echo.Context) bool {
+			if c.Request().URL.Path == "/server/payment" {
+				return true
+			}
+			if email := ath.GetKeyAuth(c); email != "" {
+				return true
+			}
+			return false
+		},
+		TokenLookup: "query:csrf",
+		CookiePath:  "/",
+	}))
 	e.Renderer = &Templates{template.Must(template.ParseGlob("views/*.html"))}
+
+	// login
+	//e.GET("/login", ath.LoginHandler)
+	//e.POST("/login", ath.LoginPostHandler)
+	//e.GET("/logout", ath.LogoutHandler)
 
 	e.GET("/link1", func(c echo.Context) error {
 		block := "link1Page"
@@ -73,6 +87,18 @@ func main() {
 	})
 	e.GET("/", func(c echo.Context) error {
 		return c.Render(http.StatusOK, "index", map[string]interface{}{"Name": "Home"})
+	})
+	l := e.Group("/admin")
+	l.Use(ath.AuthMiddleware)
+
+	l.GET("/", func(c echo.Context) error {
+		return c.Render(http.StatusOK, "admin", map[string]interface{}{
+			"User":    c.Get("email"),
+			"Group":   c.Get("group"),
+			"Code":    c.Get("code"),
+			"CSRF":    c.Get(middleware.DefaultCSRFConfig.ContextKey),
+			"Version": version,
+		})
 	})
 	e.Logger.Fatal(e.Start(":8000"))
 }
