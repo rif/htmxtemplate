@@ -14,12 +14,13 @@ import (
 	"github.com/labstack/echo/v4"
 	"github.com/rif/cache2go"
 	"golang.org/x/crypto/bcrypt"
+	"github.com/google/uuid"
 )
 
 const (
-	CookieSession   = "session"
-	CookieSecret    = "aisiep0oongeiDaeCh7Yie3saPi0ciu4feiJoqu6woh6Xoopo4Ahx4ca6ga4shei"
-	GroupAdmin      = "admin"
+	CookieSession = "session"
+	CookieSecret  = "aisiep0oongeiDaeCh7Yie3saPi0ciu4feiJoqu6woh6Xoopo4Ahx4ca6ga4shei"
+	GroupAdmin    = "admin"
 )
 
 type AuthManager struct {
@@ -64,10 +65,9 @@ func (am *AuthManager) initAuth() error {
 		if err != nil {
 			return err
 		}
-		if _, err := am.db.Exec(am.ctx, `insert into "user"(email, hashed_password, group) values ($1, $2, $3)`, "admin@mailinator.com", string(hash), GroupAdmin); err != nil {
+		if _, err := am.db.Exec(am.ctx, `insert into "user"(id, email, hashed_password, "group") values ($1, $2, $3, $4)`, uuid.New().String(), "admin@mailinator.com", string(hash), GroupAdmin); err != nil {
+			slog.Error(err.Error())
 			return err
-		} else {
-			slog.Info("CMD: ")
 		}
 	}
 	return nil

@@ -6,6 +6,7 @@ require (
 	github.com/georgysavva/scany v1.2.1 // indirect
 	github.com/georgysavva/scany/v2 v2.1.0 // indirect
 	github.com/golang-jwt/jwt v3.2.2+incompatible // indirect
+	github.com/google/uuid v1.6.0 // indirect
 	github.com/jackc/chunkreader/v2 v2.0.1 // indirect
 	github.com/jackc/pgconn v1.8.0 // indirect
 	github.com/jackc/pgio v1.0.0 // indirect
