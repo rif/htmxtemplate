@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
+	"strings"
 	"sync"
 	"templates/models"
 	"time"
@@ -15,6 +16,7 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
+	"github.com/nats-io/nuid"
 	"github.com/rif/cache2go"
 	"golang.org/x/crypto/bcrypt"
 )
@@ -170,7 +172,6 @@ func (am *AuthManager) LoginPostHandler(c echo.Context) error {
 		slog.Error(err.Error())
 		return c.String(http.StatusForbidden, "tryagain")
 	}
-	slog.Info("TEST: ", "user", u)
 
 	if err := bcrypt.CompareHashAndPassword([]byte(u.HashedPassword), []byte(pass)); err != nil {
 		return c.String(http.StatusForbidden, "tryagain")
@@ -210,74 +211,74 @@ func (am *AuthManager) LogoutHandler(c echo.Context) error {
 	return c.Redirect(http.StatusFound, "/login")
 }
 
-/*func (am *AuthManager) UsersHandler(c echo.Context) error {
-	var users []*User
-	if err := am.db.All(&users); err != nil {
-		return err
-	}
+func (am *AuthManager) UsersHandler(c echo.Context) error {
+	var users []*models.User
+	if err := pgxscan.Select(
+		am.ctx, am.db, &users, `SELECT id, "group", first_name, last_name, email FROM "user"`); err != nil {
+		return c.Redirect(http.StatusFound, "/")
+		}
 
-	for _, user := range users {
-		user.Password = ""
-	}
-	response := map[string]interface{}{
+	return c.JSON(http.StatusOK, map[string]interface{}{
 		"items": users,
-	}
-	return c.JSON(http.StatusOK, response)
+	})
 }
 
 func (am *AuthManager) UserPostHandler(c echo.Context) error {
-	u := new(User)
+	u := new(models.User)
 	if err := c.Bind(u); err != nil {
 		return err
 	}
-	if strings.TrimSpace(u.Password) != "" {
-		hash, err := bcrypt.GenerateFromPassword([]byte(u.Password), bcrypt.DefaultCost)
+	if strings.TrimSpace(u.HashedPassword) != "" {
+		hash, err := bcrypt.GenerateFromPassword([]byte(u.HashedPassword), bcrypt.DefaultCost)
 		if err != nil {
 			return err
 		}
-		u.Password = string(hash)
+		u.HashedPassword = string(hash)
 	} else {
 		// get previous password
-		if u.ID != 0 {
-			oldUser := &User{}
-			if err := am.db.One("ID", u.ID, oldUser); err == nil {
-				u.Password = oldUser.Password
+		if u.ID != "" {
+			oldUser := models.User{}
+			if err := pgxscan.Get(am.ctx, am.db, &oldUser, fmt.Sprintf(`SELECT hashed_password FROM "user" WHERE id='%s'`, u.ID)); err == nil {
+				u.HashedPassword = oldUser.HashedPassword
 			}
 		}
 	}
-	if err := am.db.Save(u); err != nil {
-		return err
-	}
+
 	return c.NoContent(http.StatusOK)
 }
 
 func (am *AuthManager) UserDeleteHandler(c echo.Context) error {
-u := new(User)
-if err := c.Bind(u); err != nil {
-return err
-}
-if err := am.db.DeleteStruct(u); err != nil {
-return err
-}
-// delete associated keys
-if err := am.db.Select(q.Eq("Email", u.Email)).Delete(new(Key)); err != nil {
-return err
-}
+	u := new(models.User)
+	if err := c.Bind(u); err != nil {
+		return err
+	}
+	if _, err := am.db.Exec(am.ctx, `delete from "user" where id=$1`, u.ID); err != nil {
+		slog.Error(err.Error())
+		return err
+	}
+	// delete associated keys
+	if _, err := am.db.Exec(am.ctx, `delete from "key" where email=$1`, u.Email); err != nil {
+		slog.Error(err.Error())
+		return err
+	}
 
-return c.NoContent(http.StatusOK)
+	return c.NoContent(http.StatusOK)
 }
 
 func (am *AuthManager) KeysHandler(c echo.Context) error {
 	am.RLock()
 	defer am.RUnlock()
-	var keys []*Key
-	if err := am.db.All(&keys); err != nil {
+	var keys []*models.Key
+	if err := pgxscan.Select(am.ctx, am.db, &keys, `SELECT email, "value", "description" FROM "key"`); err != nil {
 		return nil
 	}
-	var users []*User
-	if err := am.db.All(&users); err != nil {
+
+	var users []*models.User
+	if err := pgxscan.Select(
+		am.ctx, am.db, &users, `SELECT id, "group", first_name, last_name, email FROM "user"`); err != nil {
 		return nil
-	}
+		}
+
 	var emails []string
 	for _, u := range users {
 		emails = append(emails, u.Email)
@@ -292,16 +293,19 @@ func (am *AuthManager) KeysHandler(c echo.Context) error {
 func (am *AuthManager) KeyPostHandler(c echo.Context) error {
 	am.Lock()
 	defer am.Unlock()
-	k := new(Key)
+	k := new(models.Key)
 	if err := c.Bind(k); err != nil {
 		return err
 	}
-	key := &Key{
-		Email: k.Email,
-		Value: nuid.Next(),
+	key := &models.Key{
+		Email:       k.Email,
+		Description: k.Description,
+		Value:       nuid.Next(),
 	}
+
 	am.cache.Set(key.Value, key.Email)
-	if err := am.db.Save(key); err != nil {
+	if _, err := am.db.Exec(am.ctx, `insert into "key" (email, "value", description) values ($1, $2, $3)`, key.Email, key.Value, key.Description); err != nil {
+		slog.Error(err.Error())
 		return err
 	}
 	return c.String(http.StatusOK, key.Value)
@@ -315,7 +319,9 @@ func (am *AuthManager) KeyDeleteHandler(c echo.Context) error {
 		return err
 	}
 	am.cache.Delete(k.Value)
-	if err := am.db.DeleteStruct(k); err != nil {
+
+	if _, err := am.db.Exec(am.ctx, `delete from "key" where email=$1`, k.Email); err != nil {
+		slog.Error(err.Error())
 		return err
 	}
 	return c.NoContent(http.StatusOK)
@@ -325,4 +331,3 @@ type Role struct {
 	Name        string              `json:"name"`
 	Permissions map[string][]string `json:"permissions"`
 }
-*/
