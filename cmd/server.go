@@ -60,9 +60,9 @@ func main() {
 	e.Renderer = &Templates{template.Must(template.ParseGlob("views/*.html"))}
 
 	// login
-	//e.GET("/login", ath.LoginHandler)
-	//e.POST("/login", ath.LoginPostHandler)
-	//e.GET("/logout", ath.LogoutHandler)
+	e.GET("/login", ath.LoginHandler)
+	e.POST("/login", ath.LoginPostHandler)
+	e.GET("/logout", ath.LogoutHandler)
 
 	e.GET("/link1", func(c echo.Context) error {
 		block := "link1Page"
@@ -86,7 +86,7 @@ func main() {
 		return c.Render(http.StatusOK, block, map[string]interface{}{"Name": "Link3"})
 	})
 	e.GET("/", func(c echo.Context) error {
-		return c.Render(http.StatusOK, "index", map[string]interface{}{"Name": "Home"})
+		return c.Render(http.StatusOK, "link1Page", map[string]interface{}{"Name": "Home"})
 	})
 	l := e.Group("/admin")
 	l.Use(ath.AuthMiddleware)

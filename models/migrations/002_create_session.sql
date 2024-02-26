@@ -1,5 +1,5 @@
 create table session (
-    id uuid not null,
+    id text not null,
     email text not null,
     "group" text,
 

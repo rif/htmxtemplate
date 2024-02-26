@@ -2,6 +2,7 @@ package auth
 
 import (
 	"context"
+	"crypto/sha1"
 	"fmt"
 	"log/slog"
 	"net/http"
@@ -10,12 +11,29 @@ import (
 	"time"
 
 	"github.com/georgysavva/scany/v2/pgxscan"
+	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v4/middleware"
 	"github.com/rif/cache2go"
 	"golang.org/x/crypto/bcrypt"
-	"github.com/google/uuid"
 )
+
+var (
+	sha1Hash = sha1.New()
+)
+
+func Sha1(attrs ...interface{}) string {
+	for _, attr := range attrs {
+		if attr == nil {
+			continue
+		}
+		sha1Hash.Write([]byte(attr.(string)))
+	}
+	defer sha1Hash.Reset()
+
+	return fmt.Sprintf("%x", sha1Hash.Sum(nil))
+}
 
 const (
 	CookieSession = "session"
@@ -115,11 +133,11 @@ func (am *AuthManager) AuthMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
 	}
 }
 
-/*func (am *AuthManager) AdminMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
+func (am *AuthManager) AdminMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		group, ok := c.Get("group").(string)
 		if !ok || group != GroupAdmin {
-			log.Warn().Interface("email", c.Get("email")).Interface("group", c.Get("group")).Msg("admin access")
+			slog.Warn("admin access", slog.String("email", c.Get("email").(string)), slog.String("group", c.Get("group").(string)))
 			return c.NoContent(http.StatusForbidden)
 		}
 		return next(c)
@@ -128,9 +146,11 @@ func (am *AuthManager) AuthMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
 
 func (am *AuthManager) LoginHandler(c echo.Context) error {
 	cookie, err := c.Cookie(CookieSession)
-if err == nil && cookie != nil {
-s := Session{}
-if err := am.db.One("Key", cookie.Value, &s); err == nil {
+	if err == nil && cookie != nil {
+		s := models.Session{}
+		if err := pgxscan.Get(
+			am.ctx, am.db, &s, `SELECT * FROM key WHERE id=$1`, cookie.Value,
+		); err != nil {
 			return c.Redirect(http.StatusFound, "/")
 		}
 	}
@@ -140,23 +160,23 @@ if err := am.db.One("Key", cookie.Value, &s); err == nil {
 }
 
 func (am *AuthManager) LoginPostHandler(c echo.Context) error {
-	credentials := struct {
-		Email string `json:"email"`
-		Pass  string `json:"pass"`
-	}{}
-	if err := c.Bind(&credentials); err != nil {
-		return err
+	email := c.FormValue("email")
+	pass := c.FormValue("pass")
+
+	u := models.User{}
+	if err := pgxscan.Get(
+		am.ctx, am.db, &u, fmt.Sprintf(`SELECT hashed_password, "group" FROM "user" WHERE email='%s'`, email),
+	); err != nil {
+		slog.Error(err.Error())
+		return c.String(http.StatusForbidden, "tryagain")
 	}
-	u := User{}
-	if err := am.db.One("Email", credentials.Email, &u); err != nil {
+	slog.Info("TEST: ", "user", u)
+
+	if err := bcrypt.CompareHashAndPassword([]byte(u.HashedPassword), []byte(pass)); err != nil {
 		return c.String(http.StatusForbidden, "tryagain")
 	}
 
-	if err := bcrypt.CompareHashAndPassword([]byte(u.Password), []byte(credentials.Pass)); err != nil {
-		return c.String(http.StatusForbidden, "tryagain")
-	}
-
-	cookie := Sha1(CookieSecret, credentials.Email, credentials.Pass)
+	cookie := Sha1(CookieSecret, email, pass)
 
 	c.SetCookie(&http.Cookie{
 		Path:    "/",
@@ -164,33 +184,33 @@ func (am *AuthManager) LoginPostHandler(c echo.Context) error {
 		Value:   cookie,
 		Expires: time.Now().Add(24 * 365 * 5 * time.Hour),
 	})
-	am.db.Save(&Session{
-		Key:   cookie,
-		Email: credentials.Email,
-		Group: u.Group,
-	})
+	if _, err := am.db.Exec(am.ctx, `insert into "session" (id, email, "group") values ($1, $2, $3)`, cookie, email, u.Group); err != nil {
+		slog.Error(err.Error())
+		return err
+	}
 	return c.String(http.StatusOK, "OK")
 }
 
 func (am *AuthManager) LogoutHandler(c echo.Context) error {
-cookie, err := c.Cookie(CookieSession)
-if err != nil || cookie == nil {
-return c.Redirect(http.StatusFound, "/login")
-}
-if err := am.db.DeleteStruct(&Session{Key: cookie.Value}); err != nil {
-return err
-}
-c.SetCookie(&http.Cookie{
-Path:    "/",
-Name:    CookieSession,
-Value:   "logout",
-Expires: time.Unix(0, 0),
-})
+	cookie, err := c.Cookie(CookieSession)
+	if err != nil || cookie == nil {
+		return c.Redirect(http.StatusFound, "/login")
+	}
+	if _, err := am.db.Exec(am.ctx, `delete from "session" where id=$1`, cookie.Value); err != nil {
+		slog.Error(err.Error())
+		return err
+	}
+	c.SetCookie(&http.Cookie{
+		Path:    "/",
+		Name:    CookieSession,
+		Value:   "logout",
+		Expires: time.Unix(0, 0),
+	})
 
-return c.Redirect(http.StatusFound, "/login")
+	return c.Redirect(http.StatusFound, "/login")
 }
 
-func (am *AuthManager) UsersHandler(c echo.Context) error {
+/*func (am *AuthManager) UsersHandler(c echo.Context) error {
 	var users []*User
 	if err := am.db.All(&users); err != nil {
 		return err

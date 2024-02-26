@@ -3,7 +3,7 @@ version: '3'
 tasks:
   default:
     cmds:
-      - wgo -file=.html go run cmd/server.go
+      - wgo -file=.html -file=.go go run cmd/server.go
 
   initdb:
     cmds:
@@ -11,6 +11,10 @@ tasks:
     - until docker exec tpl pg_isready ; do sleep 1 ; done
     - sleep 1
     - docker exec tpl createdb -U postgres templates
+
+  stopdb:
+    cmds:
+    - docker stop tpl
 
   db:
     cmds:
