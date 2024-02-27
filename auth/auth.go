@@ -16,7 +16,6 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
-	"github.com/nats-io/nuid"
 	"github.com/rif/cache2go"
 	"golang.org/x/crypto/bcrypt"
 )
@@ -85,7 +84,7 @@ func (am *AuthManager) initAuth() error {
 		if err != nil {
 			return err
 		}
-		if _, err := am.db.Exec(am.ctx, `insert into "user"(id, email, hashed_password, "group") values ($1, $2, $3, $4)`, uuid.New().String(), "admin@mailinator.com", string(hash), GroupAdmin); err != nil {
+		if _, err := am.db.Exec(am.ctx, `insert into "user"(id, email, hashed_password, "group") values ($1, $2, $3, $4)`, uuid.NewString(), "admin@mailinator.com", string(hash), GroupAdmin); err != nil {
 			slog.Error(err.Error())
 			return err
 		}
@@ -300,7 +299,7 @@ func (am *AuthManager) KeyPostHandler(c echo.Context) error {
 	key := &models.Key{
 		Email:       k.Email,
 		Description: k.Description,
-		Value:       nuid.Next(),
+		Value:       uuid.NewString(),
 	}
 
 	am.cache.Set(key.Value, key.Email)
@@ -314,7 +313,7 @@ func (am *AuthManager) KeyPostHandler(c echo.Context) error {
 func (am *AuthManager) KeyDeleteHandler(c echo.Context) error {
 	am.Lock()
 	defer am.Unlock()
-	k := new(Key)
+	k := new(models.Key)
 	if err := c.Bind(k); err != nil {
 		return err
 	}
