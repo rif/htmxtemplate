@@ -1,0 +1,10 @@
+{{ block "usersPage" . }} {{ template "top" .}} {{ block "usersContainer" .}}
+{{template "navbar" .}}
+<div class="w3-container">
+  <ul>
+    {{range $val := .items}}
+    <li>{{$val.Email}}</li>
+    {{end}}
+  </ul>
+</div>
+{{ end }} {{ template "bottom" }} {{ end }}

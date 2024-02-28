@@ -58,41 +58,36 @@ func main() {
 		CookiePath:  "/",
 	}))
 	e.Renderer = &Templates{template.Must(template.ParseGlob("views/*.html"))}
+	e.Static("/static", "static")
 
 	// login
 	e.GET("/login", ath.LoginHandler)
 	e.POST("/login", ath.LoginPostHandler)
 	e.GET("/logout", ath.LogoutHandler)
 
-	e.GET("/link1", func(c echo.Context) error {
-		block := "link1Page"
-		if c.Request().Header.Get("Hx-Request") == "true" {
-			block = "link1Container"
-		}
-		return c.Render(http.StatusOK, block, map[string]interface{}{"Name": "Link1"})
-	})
+	e.GET("/users", ath.UsersHandler)
 	e.GET("/link2", func(c echo.Context) error {
 		block := "link2Page"
 		if c.Request().Header.Get("Hx-Request") == "true" {
 			block = "link2Container"
 		}
-		return c.Render(http.StatusOK, block, map[string]interface{}{"Name": "Link2"})
+		return c.Render(http.StatusOK, block, map[string]any{"Name": "Link2"})
 	})
 	e.GET("/link3", func(c echo.Context) error {
 		block := "link3Page"
 		if c.Request().Header.Get("Hx-Request") == "true" {
 			block = "link3Container"
 		}
-		return c.Render(http.StatusOK, block, map[string]interface{}{"Name": "Link3"})
+		return c.Render(http.StatusOK, block, map[string]any{"Name": "Link3"})
 	})
 	e.GET("/", func(c echo.Context) error {
-		return c.Render(http.StatusOK, "link1Page", map[string]interface{}{"Name": "Home"})
+		return c.Render(http.StatusOK, "link2Page", map[string]any{"Name": "Home"})
 	})
 	l := e.Group("/admin")
 	l.Use(ath.AuthMiddleware)
 
 	l.GET("/", func(c echo.Context) error {
-		return c.Render(http.StatusOK, "admin", map[string]interface{}{
+		return c.Render(http.StatusOK, "admin", map[string]any{
 			"User":    c.Get("email"),
 			"Group":   c.Get("group"),
 			"Code":    c.Get("code"),

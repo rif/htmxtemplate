@@ -24,7 +24,7 @@ var (
 	sha1Hash = sha1.New()
 )
 
-func Sha1(attrs ...interface{}) string {
+func Sha1(attrs ...any) string {
 	for _, attr := range attrs {
 		if attr == nil {
 			continue
@@ -155,7 +155,7 @@ func (am *AuthManager) LoginHandler(c echo.Context) error {
 			return c.Redirect(http.StatusFound, "/")
 		}
 	}
-	return c.Render(http.StatusOK, "login", map[string]interface{}{
+	return c.Render(http.StatusOK, "login", map[string]any{
 		"CSRF": c.Get(middleware.DefaultCSRFConfig.ContextKey),
 	})
 }
@@ -213,11 +213,18 @@ func (am *AuthManager) LogoutHandler(c echo.Context) error {
 func (am *AuthManager) UsersHandler(c echo.Context) error {
 	var users []*models.User
 	if err := pgxscan.Select(
-		am.ctx, am.db, &users, `SELECT id, "group", first_name, last_name, email FROM "user"`); err != nil {
-		return c.Redirect(http.StatusFound, "/")
+		am.ctx, am.db, &users, `SELECT id, "group", email FROM "user"`); err != nil {
+			slog.Error("HERE", "err", err)
+
+			return c.Redirect(http.StatusFound, "/")
 		}
 
-	return c.JSON(http.StatusOK, map[string]interface{}{
+	block := "usersPage"
+	if c.Request().Header.Get("Hx-Request") == "true" {
+		block = "usersContainer"
+	}
+	return c.Render(http.StatusOK, block, map[string]any{
+		"Name":"Users",
 		"items": users,
 	})
 }
@@ -282,7 +289,7 @@ func (am *AuthManager) KeysHandler(c echo.Context) error {
 	for _, u := range users {
 		emails = append(emails, u.Email)
 	}
-	response := map[string]interface{}{
+	response := map[string]any{
 		"emails": emails,
 		"keys":   keys,
 	}

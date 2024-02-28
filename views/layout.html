@@ -8,8 +8,10 @@
     integrity="sha384-D1Kt99CQMDuVetoL1lrYwg5t+9QdHe7NLX/SoJYkXDFfX37iInKRy5xLSi8nO7UC"
     crossorigin="anonymous"
   ></script>
+  <!-- <script src="/static/htmx.min.js.gz"></script>-->
   <link rel="stylesheet" href="https://www.w3schools.com/w3css/4/w3.css" />
   <body>
+    {{block "sidebar" .}}
     <div
       class="w3-sidebar w3-bar-block w3-collapse w3-card w3-animate-left"
       style="width: 200px"
@@ -22,11 +24,11 @@
         Close &times;
       </button>
       <a
-        hx-get="/link1"
+        hx-get="/users"
         hx-push-url="true"
         hx-target="#main"
         class="w3-bar-item w3-button"
-        >Link 1</a
+        >Users</a
       >
       <a
         hx-get="/link2"
@@ -43,7 +45,7 @@
         >Link 3</a
       >
     </div>
-    {{ end}}
+    {{end}} {{ end}} {{block "navbar" .}}
     <div id="main">
       <div class="w3-main" style="margin-left: 200px">
         <div class="w3-teal">
@@ -59,8 +61,7 @@
         </div>
       </div>
     </div>
-    <div class="w3-container"></div>
-    {{ block "bottom" . }}
+    {{end}} {{ block "bottom" . }}
     <script>
       function w3_open() {
         document.getElementById("mySidebar").style.display = "block";
