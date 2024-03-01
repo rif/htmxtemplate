@@ -3,9 +3,11 @@ create table "user" (
     email text not null,
     first_name text,
     last_name text,
+    instagram text,
+    phone text,
+    "work" text,
     hashed_password text,
-    registration_key text,
-    reset_password_key text,
+    reset_key text,
 
     constraint user_pkey primary key (id)
 );

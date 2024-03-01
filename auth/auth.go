@@ -9,6 +9,7 @@ import (
 	"strings"
 	"sync"
 	"templates/models"
+	"templates/utils"
 	"time"
 
 	"github.com/georgysavva/scany/v2/pgxscan"
@@ -123,7 +124,7 @@ func (am *AuthManager) AuthMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
 		}
 		s := models.Session{}
 		if err := pgxscan.Get(
-			am.ctx, am.db, &s, `SELECT * FROM key WHERE id=$1`, cookie.Value,
+			am.ctx, am.db, &s, `SELECT * FROM session WHERE id=$1`, cookie.Value,
 		); err != nil {
 			return c.Redirect(http.StatusFound, "/login")
 		}
@@ -145,6 +146,76 @@ func (am *AuthManager) AdminMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
 	}
 }
 
+func (am *AuthManager) RegisterHandler(c echo.Context) error {
+	cookie, err := c.Cookie(CookieSession)
+	if err == nil && cookie != nil {
+		s := models.Session{}
+		if err := pgxscan.Get(
+			am.ctx, am.db, &s, `SELECT * FROM key WHERE id=$1`, cookie.Value,
+		); err != nil {
+			return c.Redirect(http.StatusFound, "/")
+		}
+	}
+
+	block := "registerPage"
+	if c.Request().Header.Get("Hx-Request") == "true" {
+		block = "registerContainer"
+	}
+	return c.Render(http.StatusOK, block, map[string]any{
+		"CSRF": c.Get(middleware.DefaultCSRFConfig.ContextKey),
+	})
+}
+
+func (am *AuthManager) RegisterPostHandler(c echo.Context) error {
+	first := c.FormValue("first")
+	last := c.FormValue("last")
+	email := c.FormValue("email")
+	pass := c.FormValue("pass")
+	pass2 := c.FormValue("pass2")
+	insta := c.FormValue("insta")
+	phone := c.FormValue("phone")
+	work := c.FormValue("work")
+
+	if len(pass) < 8 {
+		return c.JSON(http.StatusNotAcceptable, map[string]any{"message": "Password too short"})
+	}
+
+	if pass != pass2 {
+		return c.JSON(http.StatusNotAcceptable, map[string]any{"message": "Passwords do not match"})
+	}
+
+	if first == "" || last == "" || email == "" || phone == "" {
+		return c.JSON(http.StatusNotAcceptable, map[string]any{"message": "Missing data"})
+	}
+
+	hashedPass, err := bcrypt.GenerateFromPassword([]byte(pass), bcrypt.DefaultCost)
+	if err != nil {
+		return err
+	}
+
+	if _, err := am.db.Exec(am.ctx, `insert into "user" (id, email, first_name, last_name, instagram, phone, work, hashed_password, reset_key) values ($1, $2, $3, $4, $5, $6, $7, $8, $9)`, uuid.NewString(), email, first, last, insta, phone, work, string(hashedPass), utils.UniqueID()); err != nil {
+		slog.Error(err.Error())
+		return err
+	}
+
+	cookie := Sha1(CookieSecret, email, pass)
+
+	c.SetCookie(&http.Cookie{
+		Path:    "/",
+		Name:    CookieSession,
+		Value:   cookie,
+		Expires: time.Now().Add(24 * 365 * 5 * time.Hour),
+	})
+
+	if _, err := am.db.Exec(am.ctx, `insert into "session" (id, email, "group") values ($1, $2, $3)`, cookie, email, utils.GroupNobody); err != nil {
+		slog.Error(err.Error())
+		return err
+	}
+
+	c.Response().Header().Set("HX-Redirect", "/admin/users")
+	return c.String(http.StatusOK, "OK")
+}
+
 func (am *AuthManager) LoginHandler(c echo.Context) error {
 	cookie, err := c.Cookie(CookieSession)
 	if err == nil && cookie != nil {
@@ -155,7 +226,12 @@ func (am *AuthManager) LoginHandler(c echo.Context) error {
 			return c.Redirect(http.StatusFound, "/")
 		}
 	}
-	return c.Render(http.StatusOK, "login", map[string]any{
+
+	block := "loginPage"
+	if c.Request().Header.Get("Hx-Request") == "true" {
+		block = "loginContainer"
+	}
+	return c.Render(http.StatusOK, block, map[string]any{
 		"CSRF": c.Get(middleware.DefaultCSRFConfig.ContextKey),
 	})
 }
@@ -188,6 +264,7 @@ func (am *AuthManager) LoginPostHandler(c echo.Context) error {
 		slog.Error(err.Error())
 		return err
 	}
+	c.Response().Header().Set("HX-Redirect", "/admin/users")
 	return c.String(http.StatusOK, "OK")
 }
 
@@ -224,8 +301,10 @@ func (am *AuthManager) UsersHandler(c echo.Context) error {
 		block = "usersContainer"
 	}
 	return c.Render(http.StatusOK, block, map[string]any{
-		"Name":"Users",
-		"items": users,
+		"Name":  "Users",
+		"Users": users,
+		"User":  c.Get("email"),
+		"CSRF":  c.Get(middleware.DefaultCSRFConfig.ContextKey),
 	})
 }
 

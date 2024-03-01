@@ -1,10 +1,18 @@
 {{ block "usersPage" . }} {{ template "top" .}} {{ block "usersContainer" .}}
-{{template "navbar" .}}
-<div class="w3-container">
-  <ul>
-    {{range $val := .items}}
-    <li>{{$val.Email}}</li>
+<div class="container">
+  <table class="table is-striped">
+    <tr>
+      <th>First Name</th>
+      <th>Last Name</th>
+      <th>Points</th>
+    </tr>
+    {{range $user := .Users}}
+    <tr>
+      <td>{{$user.Email}}</td>
+      <td>Smith</td>
+      <td>50</td>
+    </tr>
     {{end}}
-  </ul>
+  </table>
 </div>
 {{ end }} {{ template "bottom" }} {{ end }}

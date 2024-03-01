@@ -1,80 +1,51 @@
-{{define "login"}}
-<!doctype html>
-<html>
-  <title>W3.CSS</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <link rel="stylesheet" href="https://www.w3schools.com/w3css/4/w3.css" />
-  <script
-    src="https://unpkg.com/htmx.org@1.9.10"
-    integrity="sha384-D1Kt99CQMDuVetoL1lrYwg5t+9QdHe7NLX/SoJYkXDFfX37iInKRy5xLSi8nO7UC"
-    crossorigin="anonymous"
-  ></script>
-  <body>
-    <header class="w3-container w3-teal">
-      <h1>Login Example</h1>
-    </header>
+{{ block "loginPage" . }} {{ template "top" .}} {{ block "loginContainer" .}}
+<section class="hero is-success is-fullheight">
+  <div class="hero-body">
+    <div class="container has-text-centered">
+      <div class="column is-4 is-offset-4">
+        <h3 class="title has-text-black">Autentificare</h3>
+        <hr class="login-hr" />
+        <p class="subtitle has-text-black">
+          Te rog să te autentifici pentru a continua.
+        </p>
+        <div class="box">
+          <figure class="avatar">
+            <img src="https://via.placeholder.com/150" />
+          </figure>
+          <form hx-post="/login?csrf={{.CSRF}}">
+            <div class="field">
+              <div class="control">
+                <input
+                  class="input is-large"
+                  name="email"
+                  type="email"
+                  placeholder="Email-ul tău"
+                  autofocus=""
+                />
+              </div>
+            </div>
 
-    <div class="w3-container w3-half w3-margin-top">
-      <form class="w3-container w3-card-4" hx-post="/login?csrf={{.CSRF}}">
-        <p>
-          <input
-            class="w3-input"
-            type="text"
-            name="email"
-            style="width: 90%"
-            required
-          />
-          <label>Name</label>
+            <div class="field">
+              <div class="control">
+                <input
+                  class="input is-large"
+                  name="pass"
+                  type="password"
+                  placeholder="Parola"
+                />
+              </div>
+            </div>
+            <button class="button is-block is-info is-large is-fullwidth">
+              Autentificare <i class="fa fa-sign-in" aria-hidden="true"></i>
+            </button>
+          </form>
+        </div>
+        <p class="has-text-grey">
+          <a href="/register">Înregistrare</a> &nbsp;&nbsp;
+          <a href="/forget">Ai uitat parola?</a> &nbsp;&nbsp;
         </p>
-        <p>
-          <input
-            class="w3-input"
-            type="password"
-            name="pass"
-            style="width: 90%"
-            required
-          />
-          <label>Password</label>
-        </p>
-
-        <p>
-          <input
-            class="w3-radio"
-            type="radio"
-            name="gender"
-            value="male"
-            checked
-          />
-          <label>Male</label>
-        </p>
-
-        <p>
-          <input class="w3-radio" type="radio" name="gender" value="female" />
-          <label>Female</label>
-        </p>
-
-        <p>
-          <input
-            class="w3-radio"
-            type="radio"
-            name="gender"
-            value=""
-            disabled
-          />
-          <label>Don't know (Disabled)</label>
-        </p>
-
-        <p>
-          <input id="milk" class="w3-check" type="checkbox" checked="checked" />
-          <label>Stay logged in</label>
-        </p>
-
-        <p>
-          <button class="w3-button w3-section w3-teal w3-ripple">Log in</button>
-        </p>
-      </form>
+      </div>
     </div>
-  </body>
-</html>
-
-{{end}}
+  </div>
+</section>
+{{ end }} {{ template "bottom" }} {{ end }}

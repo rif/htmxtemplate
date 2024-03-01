@@ -14,7 +14,7 @@ create table key (
     constraint key_pkey primary key (email)
 );
 
-alter table "user" add column "group" text;
+alter table "user" add column "group" text not null default 'nobody';
 
 ---- create above / drop below ----
 

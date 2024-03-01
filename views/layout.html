@@ -1,75 +1,65 @@
-{{block "top" .}}
+{{ block "top" . }}
 <!doctype html>
 <html>
-  <title>W3.CSS</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <script
-    src="https://unpkg.com/htmx.org@1.9.10"
-    integrity="sha384-D1Kt99CQMDuVetoL1lrYwg5t+9QdHe7NLX/SoJYkXDFfX37iInKRy5xLSi8nO7UC"
-    crossorigin="anonymous"
-  ></script>
-  <!-- <script src="/static/htmx.min.js.gz"></script>-->
-  <link rel="stylesheet" href="https://www.w3schools.com/w3css/4/w3.css" />
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Template</title>
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/bulma@0.9.4/css/bulma.min.css"
+    />
+    <link
+      href="https://fonts.googleapis.com/css?family=Questrial&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" type="text/css" href="/static/main.css" />
+    <script
+      src="https://unpkg.com/htmx.org@1.9.10"
+      integrity="sha384-D1Kt99CQMDuVetoL1lrYwg5t+9QdHe7NLX/SoJYkXDFfX37iInKRy5xLSi8nO7UC"
+      crossorigin="anonymous"
+    ></script>
+  </head>
   <body>
-    {{block "sidebar" .}}
-    <div
-      class="w3-sidebar w3-bar-block w3-collapse w3-card w3-animate-left"
-      style="width: 200px"
-      id="mySidebar"
-    >
-      <button
-        class="w3-bar-item w3-button w3-large w3-hide-large"
-        onclick="w3_close()"
-      >
-        Close &times;
-      </button>
-      <a
-        hx-get="/users"
-        hx-push-url="true"
-        hx-target="#main"
-        class="w3-bar-item w3-button"
-        >Users</a
-      >
-      <a
-        hx-get="/link2"
-        hx-push-url="true"
-        hx-target="#main"
-        class="w3-bar-item w3-button"
-        >Link 2</a
-      >
-      <a
-        hx-get="/link3"
-        hx-push-url="true"
-        hx-target="#main"
-        class="w3-bar-item w3-button"
-        >Link 3</a
-      >
-    </div>
-    {{end}} {{ end}} {{block "navbar" .}}
-    <div id="main">
-      <div class="w3-main" style="margin-left: 200px">
-        <div class="w3-teal">
-          <button
-            class="w3-button w3-teal w3-xlarge w3-hide-large"
-            onclick="w3_open()"
-          >
-            &#9776;
-          </button>
-          <div class="w3-container">
-            <h1>{{.Name}}</h1>
-          </div>
+    <nav class="navbar is-dark">
+      <div class="navbar-brand">
+        <a class="navbar-item" href="https://z-events.ro">
+          <img
+            class="ml-4"
+            src="https://via.placeholder.com/150"
+            alt="Bulma: a modern CSS framework based on Flexbox"
+          />
+        </a>
+        <div class="navbar-burger burger" data-target="navbar">
+          <span></span>
+          <span></span>
+          <span></span>
         </div>
       </div>
-    </div>
-    {{end}} {{ block "bottom" . }}
+      <div id="navbar" class="navbar-menu">
+        <div class="navbar-end">
+          <a class="navbar-item" href="/"> Acasă </a>
+          <a class="navbar-item" href="/#about"> Despre noi </a>
+          <a class="navbar-item" href="/#social"> Social </a>
+          {{if .User}}
+          <a class="navbar-item" href="/profile"> {{.User}} </a>
+          <a class="navbar-item" href="/logout"> Logout </a>
+          {{end}}
+        </div>
+      </div>
+    </nav>
+    {{ end }} {{ block "bottom" . }}
     <script>
-      function w3_open() {
-        document.getElementById("mySidebar").style.display = "block";
-      }
-
-      function w3_close() {
-        document.getElementById("mySidebar").style.display = "none";
-      }
+      // The following code is based off a toggle menu by @Bradcomp
+      // source: https://gist.github.com/Bradcomp/a9ef2ef322a8e8017443b626208999c1
+      (function () {
+        var burger = document.querySelector(".burger");
+        var menu = document.querySelector("#" + burger.dataset.target);
+        burger.addEventListener("click", function () {
+          burger.classList.toggle("is-active");
+          menu.classList.toggle("is-active");
+        });
+      })();
     </script>
   </body>
 </html>

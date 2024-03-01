@@ -60,12 +60,13 @@ func main() {
 	e.Renderer = &Templates{template.Must(template.ParseGlob("views/*.html"))}
 	e.Static("/static", "static")
 
-	// login
+	// auth
+	e.GET("/register", ath.RegisterHandler)
+	e.POST("/register", ath.RegisterPostHandler)
 	e.GET("/login", ath.LoginHandler)
 	e.POST("/login", ath.LoginPostHandler)
 	e.GET("/logout", ath.LogoutHandler)
 
-	e.GET("/users", ath.UsersHandler)
 	e.GET("/link2", func(c echo.Context) error {
 		block := "link2Page"
 		if c.Request().Header.Get("Hx-Request") == "true" {
@@ -86,14 +87,7 @@ func main() {
 	l := e.Group("/admin")
 	l.Use(ath.AuthMiddleware)
 
-	l.GET("/", func(c echo.Context) error {
-		return c.Render(http.StatusOK, "admin", map[string]any{
-			"User":    c.Get("email"),
-			"Group":   c.Get("group"),
-			"Code":    c.Get("code"),
-			"CSRF":    c.Get(middleware.DefaultCSRFConfig.ContextKey),
-			"Version": version,
-		})
-	})
+	l.GET("/users", ath.UsersHandler)
+
 	e.Logger.Fatal(e.Start(":8000"))
 }

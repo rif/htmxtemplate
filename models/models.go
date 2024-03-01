@@ -1,18 +1,20 @@
 package models
 
 type User struct {
-	ID               string
-	Group            string
-	FirstName        string
-	LastName         string
-	Email            string
-	HashedPassword   string
-	RegistrationKey  string
-	ResetPasswordKey string
+	ID             string
+	Group          string
+	FirstName      string
+	LastName       string
+	Email          string
+	Instagram string
+	Phone string
+	Work string
+	HashedPassword string
+	ResetKey       string
 }
 
 type Session struct {
-	ID   string
+	ID    string
 	Email string
 	Group string
 }
