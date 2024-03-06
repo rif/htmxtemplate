@@ -260,7 +260,7 @@ func (am *AuthManager) LoginPostHandler(c echo.Context) error {
 		Value:   cookie,
 		Expires: time.Now().Add(24 * 365 * 5 * time.Hour),
 	})
-	if _, err := am.db.Exec(am.ctx, `insert into "session" (id, email, "group") values ($1, $2, $3)`, cookie, email, u.Group); err != nil {
+	if _, err := am.db.Exec(am.ctx, `insert into "session" (id, email, "group") values ($1, $2, $3) ON CONFLICT DO NOTHING`, cookie, email, u.Group); err != nil {
 		slog.Error(err.Error())
 		return err
 	}

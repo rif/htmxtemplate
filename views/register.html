@@ -9,11 +9,12 @@
         <p class="subtitle has-text-black">
           Te rog să introduci datele de autentificare.
         </p>
+        <div id="message"></div>
         <div class="box">
           <figure class="avatar">
-            <img src="https://via.placeholder.com/150" />
+            <img src="/static/imagini/logo.png" />
           </figure>
-          <form hx-post="/register?csrf={{.CSRF}}">
+          <form hx-post="/register?csrf={{.CSRF}}" hx-target="#message">
             <div class="field">
               <div class="control">
                 <input

@@ -6,17 +6,18 @@ type User struct {
 	FirstName      string
 	LastName       string
 	Email          string
-	Instagram string
-	Phone string
-	Work string
+	Instagram      string
+	Phone          string
+	Work           string
 	HashedPassword string
 	ResetKey       string
 }
 
 type Session struct {
-	ID    string
-	Email string
-	Group string
+	ID      string
+	Email   string
+	Group   string
+	Payload string
 }
 
 type Key struct {
